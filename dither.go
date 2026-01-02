@@ -6,11 +6,23 @@ import (
 	"math"
 )
 
-// StuckiMatrix defines the error distribution pattern for Stucki dithering
-var StuckiMatrix = []struct {
+// DitherMethod represents the dithering algorithm to use
+type DitherMethod string
+
+const (
+	DitherStucki         DitherMethod = "stucki"
+	DitherFloydSteinberg DitherMethod = "floyd-steinberg"
+	DitherAtkinson       DitherMethod = "atkinson"
+)
+
+// DitherMatrix defines an error diffusion pattern
+type DitherMatrix struct {
 	dx, dy int
 	weight float64
-}{
+}
+
+// StuckiMatrix defines the error distribution pattern for Stucki dithering
+var StuckiMatrix = []DitherMatrix{
 	{1, 0, 8.0 / 42.0},   // Right
 	{2, 0, 4.0 / 42.0},   // Right + 1
 	{-2, 1, 2.0 / 42.0},  // Bottom-left-left
@@ -25,8 +37,49 @@ var StuckiMatrix = []struct {
 	{2, 2, 1.0 / 42.0},   // Bottom2-right-right
 }
 
+// FloydSteinbergMatrix defines the error distribution for Floyd-Steinberg dithering
+var FloydSteinbergMatrix = []DitherMatrix{
+	{1, 0, 7.0 / 16.0},  // Right
+	{-1, 1, 3.0 / 16.0}, // Bottom-left
+	{0, 1, 5.0 / 16.0},  // Bottom
+	{1, 1, 1.0 / 16.0},  // Bottom-right
+}
+
+// AtkinsonMatrix defines the error distribution for Atkinson dithering
+var AtkinsonMatrix = []DitherMatrix{
+	{1, 0, 1.0 / 8.0},  // Right
+	{2, 0, 1.0 / 8.0},  // Right + 1
+	{-1, 1, 1.0 / 8.0}, // Bottom-left
+	{0, 1, 1.0 / 8.0},  // Bottom
+	{1, 1, 1.0 / 8.0},  // Bottom-right
+	{0, 2, 1.0 / 8.0},  // Bottom2
+}
+
+// ApplyDithering applies error diffusion dithering with the specified method
+func ApplyDithering(img image.Image, method DitherMethod) *image.RGBA {
+	var matrix []DitherMatrix
+	switch method {
+	case DitherStucki:
+		matrix = StuckiMatrix
+	case DitherFloydSteinberg:
+		matrix = FloydSteinbergMatrix
+	case DitherAtkinson:
+		matrix = AtkinsonMatrix
+	default:
+		matrix = StuckiMatrix
+	}
+
+	return applyErrorDiffusion(img, matrix)
+}
+
 // ApplyStuckiDithering applies the Stucki dithering algorithm to an image
+// Deprecated: Use ApplyDithering(img, DitherStucki) instead
 func ApplyStuckiDithering(img image.Image) *image.RGBA {
+	return ApplyDithering(img, DitherStucki)
+}
+
+// applyErrorDiffusion applies error diffusion dithering with the given matrix
+func applyErrorDiffusion(img image.Image, matrix []DitherMatrix) *image.RGBA {
 	bounds := img.Bounds()
 	width := bounds.Dx()
 	height := bounds.Dy()
@@ -98,7 +151,7 @@ func ApplyStuckiDithering(img image.Image) *image.RGBA {
 			}
 
 			// Distribute error to neighboring pixels
-			for _, offset := range StuckiMatrix {
+			for _, offset := range matrix {
 				newX := x + offset.dx
 				newY := y + offset.dy
 

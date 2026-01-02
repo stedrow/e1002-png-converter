@@ -12,10 +12,13 @@ import (
 )
 
 var (
-	outputPath string
-	noResize   bool
-	maxWidth   int
-	maxHeight  int
+	outputPath   string
+	noResize     bool
+	maxWidth     int
+	maxHeight    int
+	deviceID     string
+	ditherMethod string
+	listDevs     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -24,21 +27,60 @@ var rootCmd = &cobra.Command{
 	Long: `E1002 PNG Converter - Converts PNG images to e-ink compliant dithered PNGs
 optimized for the reTerminal E1002 display (Spectra E6 7.3").
 
-Applies Stucki dithering to convert standard PNG images to a 6-color palette
+Applies error diffusion dithering to convert standard PNG images to a 6-color palette
 suitable for e-ink displays, producing high-quality results with minimal artifacts.`,
-	Args: cobra.ExactArgs(1),
+	Args: func(cmd *cobra.Command, args []string) error {
+		// Allow 0 args when listing devices
+		if listDevs {
+			return nil
+		}
+		return cobra.ExactArgs(1)(cmd, args)
+	},
 	RunE: convertImage,
 }
 
 func init() {
 	rootCmd.Flags().StringVarP(&outputPath, "output", "o", "", "Output PNG file path (default: input_dithered.png)")
+	rootCmd.Flags().StringVarP(&deviceID, "device", "d", "", "Device profile to use (e.g., reterminal-e1002, waveshare-7in5-v2)")
+	rootCmd.Flags().BoolVar(&listDevs, "list-devices", false, "List all available device profiles")
+	rootCmd.Flags().StringVar(&ditherMethod, "dither", "stucki", "Dithering algorithm (stucki, floyd-steinberg, atkinson)")
 	rootCmd.Flags().BoolVar(&noResize, "no-resize", false, fmt.Sprintf("Disable automatic resizing to fit %dx%d display", E1002Width, E1002Height))
 	rootCmd.Flags().IntVar(&maxWidth, "max-width", E1002Width, "Maximum width for resizing")
 	rootCmd.Flags().IntVar(&maxHeight, "max-height", E1002Height, "Maximum height for resizing")
 }
 
 func convertImage(cmd *cobra.Command, args []string) error {
+	// Handle --list-devices flag
+	if listDevs {
+		devices, err := ListDevices()
+		if err != nil {
+			return fmt.Errorf("failed to list devices: %w", err)
+		}
+		fmt.Println("Available device profiles:")
+		for _, device := range devices {
+			fmt.Println(device)
+		}
+		return nil
+	}
+
 	inputPath := args[0]
+
+	// Load device profile if specified
+	if deviceID != "" {
+		device, err := GetDevice(deviceID)
+		if err != nil {
+			return fmt.Errorf("failed to load device profile: %w", err)
+		}
+		fmt.Printf("Using device profile: %s\n", device.Name)
+		maxWidth = device.Width
+		maxHeight = device.Height
+	}
+
+	// Validate dithering method
+	method := DitherMethod(ditherMethod)
+	if method != DitherStucki && method != DitherFloydSteinberg && method != DitherAtkinson {
+		return fmt.Errorf("invalid dithering method: %s (must be stucki, floyd-steinberg, or atkinson)", ditherMethod)
+	}
 
 	// Validate input file
 	if !strings.HasSuffix(strings.ToLower(inputPath), ".png") {
@@ -98,11 +140,11 @@ func convertImage(cmd *cobra.Command, args []string) error {
 
 	bounds = img.Bounds()
 	fmt.Printf("Processing size: %dx%d\n", bounds.Dx(), bounds.Dy())
-	fmt.Println("Applying Stucki dithering with E1002 palette...")
+	fmt.Printf("Applying %s dithering with E1002 palette...\n", ditherMethod)
 
 	// Apply dithering
 	start := time.Now()
-	dithered := ApplyStuckiDithering(img)
+	dithered := ApplyDithering(img, method)
 	elapsed := time.Since(start)
 	fmt.Printf("Dithering completed in %.1f seconds\n", elapsed.Seconds())
 
