@@ -19,6 +19,8 @@ var (
 	deviceID     string
 	ditherMethod string
 	listDevs     bool
+	brightness   int
+	contrast     int
 )
 
 var rootCmd = &cobra.Command{
@@ -44,6 +46,8 @@ func init() {
 	rootCmd.Flags().StringVarP(&deviceID, "device", "d", "", "Device profile to use (e.g., reterminal-e1002, waveshare-7in5-v2)")
 	rootCmd.Flags().BoolVar(&listDevs, "list-devices", false, "List all available device profiles")
 	rootCmd.Flags().StringVar(&ditherMethod, "dither", "stucki", "Dithering algorithm (stucki, floyd-steinberg, atkinson)")
+	rootCmd.Flags().IntVar(&brightness, "brightness", 0, "Brightness adjustment: -100 (darker) to 100 (brighter)")
+	rootCmd.Flags().IntVar(&contrast, "contrast", 0, "Contrast adjustment: -100 (less contrast) to 100 (more contrast)")
 	rootCmd.Flags().BoolVar(&noResize, "no-resize", false, fmt.Sprintf("Disable automatic resizing to fit %dx%d display", E1002Width, E1002Height))
 	rootCmd.Flags().IntVar(&maxWidth, "max-width", E1002Width, "Maximum width for resizing")
 	rootCmd.Flags().IntVar(&maxHeight, "max-height", E1002Height, "Maximum height for resizing")
@@ -80,6 +84,14 @@ func convertImage(cmd *cobra.Command, args []string) error {
 	method := DitherMethod(ditherMethod)
 	if method != DitherStucki && method != DitherFloydSteinberg && method != DitherAtkinson {
 		return fmt.Errorf("invalid dithering method: %s (must be stucki, floyd-steinberg, or atkinson)", ditherMethod)
+	}
+
+	// Validate brightness and contrast
+	if brightness < -100 || brightness > 100 {
+		return fmt.Errorf("brightness must be between -100 and 100, got %d", brightness)
+	}
+	if contrast < -100 || contrast > 100 {
+		return fmt.Errorf("contrast must be between -100 and 100, got %d", contrast)
 	}
 
 	// Validate input file
@@ -140,6 +152,13 @@ func convertImage(cmd *cobra.Command, args []string) error {
 
 	bounds = img.Bounds()
 	fmt.Printf("Processing size: %dx%d\n", bounds.Dx(), bounds.Dy())
+
+	// Apply brightness/contrast adjustments if specified
+	if brightness != 0 || contrast != 0 {
+		fmt.Printf("Adjusting brightness: %+d, contrast: %+d\n", brightness, contrast)
+		img = AdjustBrightnessContrast(img, brightness, contrast)
+	}
+
 	fmt.Printf("Applying %s dithering with E1002 palette...\n", ditherMethod)
 
 	// Apply dithering
