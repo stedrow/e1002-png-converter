@@ -12,6 +12,7 @@ Built in Go - a single compiled binary with zero runtime dependencies.
 - **4-bit PNG**: Native 4-bit indexed color output (no external tools needed)
 - **Device Profiles**: Pre-configured settings for popular e-ink displays
 - **Multiple Dithering Algorithms**: Choose from Stucki, Floyd-Steinberg, or Atkinson
+- **Brightness/Contrast Adjustment**: Fine-tune image tone before dithering for optimal e-ink display
 - **Smart Resizing**: Auto-resize and center-crop to target dimensions while maintaining aspect ratio
 
 ## Installation
@@ -57,8 +58,17 @@ Download pre-built binaries from the releases page (coming soon).
 # Use Atkinson dithering (lighter, more subtle)
 ./bin/e1002-convert input.png --dither atkinson
 
-# Combine options
-./bin/e1002-convert input.png -d pimoroni-inky-impression --dither atkinson -o output.png
+# Adjust brightness (darker images on e-ink)
+./bin/e1002-convert input.png --brightness 20
+
+# Adjust contrast (sharper appearance)
+./bin/e1002-convert input.png --contrast 30
+
+# Adjust both brightness and contrast
+./bin/e1002-convert input.png --brightness 15 --contrast 25
+
+# Combine all options for optimal e-ink output
+./bin/e1002-convert input.png -d pimoroni-inky-impression --dither atkinson --brightness 10 --contrast 20 -o output.png
 
 # Disable automatic resizing
 ./bin/e1002-convert input.png --no-resize
@@ -94,6 +104,8 @@ Flags:
   -d, --device string      Device profile to use (e.g., reterminal-e1002, waveshare-7in5-v2)
       --list-devices       List all available device profiles
       --dither string      Dithering algorithm: stucki, floyd-steinberg, atkinson (default "stucki")
+      --brightness int     Brightness adjustment: -100 (darker) to 100 (brighter) (default 0)
+      --contrast int       Contrast adjustment: -100 (less contrast) to 100 (more contrast) (default 0)
       --no-resize          Disable automatic resizing to fit 800x480 display
       --max-width int      Maximum width for resizing (default 800)
       --max-height int     Maximum height for resizing (default 480)
@@ -121,6 +133,29 @@ Three error diffusion algorithms are available:
 - **Stucki** (default) - Highest quality, spreads error over 12 neighboring pixels. Best for photos and complex images.
 - **Floyd-Steinberg** - Classic algorithm, spreads error over 4 pixels. Good balance of speed and quality.
 - **Atkinson** - Lighter dithering, preserves more highlights. Best for line art, comics, and high-contrast images.
+
+## Brightness and Contrast Adjustments
+
+Fine-tune image appearance before dithering to optimize for e-ink displays:
+
+### How It Works
+
+E-ink displays have fixed color palettes, but brightness/contrast adjustments affect which palette colors get selected during dithering:
+
+- **Brightness** (-100 to 100): Shifts color selection toward lighter or darker palette colors
+  - Positive values: More whites, yellows, lighter colors (brighter appearance)
+  - Negative values: More blacks, dark blues, darker colors (darker appearance)
+
+- **Contrast** (-100 to 100): Controls how extreme the color selection is
+  - Positive values: More pure blacks/whites, sharper appearance
+  - Negative values: More middle tones, softer appearance
+
+### When to Use
+
+- **Dark/muddy source images**: Try `--brightness 15 --contrast 20`
+- **Washed-out images**: Try `--brightness -10 --contrast 25`
+- **Text readability**: Try `--contrast 30` for sharper text
+- **Photos**: Try `--brightness 10 --contrast 15` for better tone mapping
 
 ## Building
 
