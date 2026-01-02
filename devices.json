@@ -1,0 +1,59 @@
+{
+  "devices": {
+    "reterminal-e1002": {
+      "name": "reTerminal E1002 (Spectra E6 7.3\")",
+      "width": 800,
+      "height": 480,
+      "colors": 7,
+      "description": "7-color e-ink display with Spectra E6 technology"
+    },
+    "waveshare-7in5-v2": {
+      "name": "Waveshare 7.5inch V2",
+      "width": 800,
+      "height": 480,
+      "colors": 2,
+      "description": "Black/white e-ink display"
+    },
+    "waveshare-7in5-v3": {
+      "name": "Waveshare 7.5inch V3",
+      "width": 800,
+      "height": 480,
+      "colors": 2,
+      "description": "Fast refresh black/white e-ink display"
+    },
+    "waveshare-7in5-b": {
+      "name": "Waveshare 7.5inch B",
+      "width": 640,
+      "height": 384,
+      "colors": 3,
+      "description": "Black/white/red e-ink display"
+    },
+    "waveshare-5in65": {
+      "name": "Waveshare 5.65inch",
+      "width": 600,
+      "height": 448,
+      "colors": 7,
+      "description": "7-color ACeP e-ink display"
+    },
+    "pimoroni-inky-impression": {
+      "name": "Pimoroni Inky Impression 7.3\"",
+      "width": 800,
+      "height": 480,
+      "colors": 7,
+      "description": "7-color ACeP e-ink display for Raspberry Pi"
+    },
+    "kindle-paperwhite": {
+      "name": "Kindle Paperwhite",
+      "width": 1236,
+      "height": 1648,
+      "colors": 16,
+      "description": "E-reader grayscale display"
+    }
+  },
+  "aliases": {
+    "e1002": "reterminal-e1002",
+    "waveshare-7.5": "waveshare-7in5-v2",
+    "waveshare-bwr": "waveshare-7in5-b",
+    "inky": "pimoroni-inky-impression"
+  }
+}

@@ -10,8 +10,9 @@ Built in Go - a single compiled binary with zero runtime dependencies.
 - **Standalone**: Single binary, no runtime dependencies
 - **Cross-platform**: Builds for Linux, macOS, Windows
 - **4-bit PNG**: Native 4-bit indexed color output (no external tools needed)
-- **Smart Resizing**: Auto-resize and center-crop to 800x480 while maintaining aspect ratio
-- **Stucki Dithering**: High-quality error diffusion with minimal artifacts
+- **Device Profiles**: Pre-configured settings for popular e-ink displays
+- **Multiple Dithering Algorithms**: Choose from Stucki, Floyd-Steinberg, or Atkinson
+- **Smart Resizing**: Auto-resize and center-crop to target dimensions while maintaining aspect ratio
 
 ## Installation
 
@@ -44,6 +45,21 @@ Download pre-built binaries from the releases page (coming soon).
 # Specify output path
 ./bin/e1002-convert input.png -o output.png
 
+# Use a device profile
+./bin/e1002-convert input.png --device waveshare-7in5-v2
+
+# List available device profiles
+./bin/e1002-convert --list-devices
+
+# Use Floyd-Steinberg dithering instead of Stucki
+./bin/e1002-convert input.png --dither floyd-steinberg
+
+# Use Atkinson dithering (lighter, more subtle)
+./bin/e1002-convert input.png --dither atkinson
+
+# Combine options
+./bin/e1002-convert input.png -d pimoroni-inky-impression --dither atkinson -o output.png
+
 # Disable automatic resizing
 ./bin/e1002-convert input.png --no-resize
 
@@ -75,11 +91,36 @@ Usage:
 
 Flags:
   -o, --output string      Output PNG file path (default: input_dithered.png)
+  -d, --device string      Device profile to use (e.g., reterminal-e1002, waveshare-7in5-v2)
+      --list-devices       List all available device profiles
+      --dither string      Dithering algorithm: stucki, floyd-steinberg, atkinson (default "stucki")
       --no-resize          Disable automatic resizing to fit 800x480 display
       --max-width int      Maximum width for resizing (default 800)
       --max-height int     Maximum height for resizing (default 480)
   -h, --help              Help for e1002-convert
 ```
+
+## Device Profiles
+
+Built-in device profiles for popular e-ink displays:
+
+- `reterminal-e1002` (alias: `e1002`) - reTerminal E1002 (Spectra E6 7.3"), 800x480, 7 colors
+- `waveshare-7in5-v2` (alias: `waveshare-7.5`) - Waveshare 7.5inch V2, 800x480, 2 colors
+- `waveshare-7in5-v3` - Waveshare 7.5inch V3, 800x480, 2 colors
+- `waveshare-7in5-b` (alias: `waveshare-bwr`) - Waveshare 7.5inch B, 640x384, 3 colors
+- `waveshare-5in65` - Waveshare 5.65inch, 600x448, 7 colors
+- `pimoroni-inky-impression` (alias: `inky`) - Pimoroni Inky Impression 7.3", 800x480, 7 colors
+- `kindle-paperwhite` - Kindle Paperwhite, 1236x1648, 16 grayscale levels
+
+Use `--list-devices` to see all available profiles.
+
+## Dithering Algorithms
+
+Three error diffusion algorithms are available:
+
+- **Stucki** (default) - Highest quality, spreads error over 12 neighboring pixels. Best for photos and complex images.
+- **Floyd-Steinberg** - Classic algorithm, spreads error over 4 pixels. Good balance of speed and quality.
+- **Atkinson** - Lighter dithering, preserves more highlights. Best for line art, comics, and high-contrast images.
 
 ## Building
 
@@ -123,9 +164,11 @@ make build-all
 e1002-png-converter/
 ├── main.go          # CLI entry point
 ├── colors.go        # E1002 color palette definitions
-├── dither.go        # Stucki dithering algorithm
+├── dither.go        # Error diffusion dithering algorithms (Stucki, Floyd-Steinberg, Atkinson)
 ├── image_utils.go   # Resize and crop utilities
 ├── png_utils.go     # PNG palette conversion
+├── device.go        # Device profile management
+├── devices.json     # Device profile definitions (embedded in binary)
 ├── go.mod           # Go module definition
 ├── Makefile         # Build commands
 ├── README.md        # This file
@@ -136,11 +179,11 @@ e1002-png-converter/
 
 ## Algorithm
 
-Uses a dual-palette Stucki dithering approach:
+Uses a dual-palette error diffusion approach:
 
-1. **Resize & Crop**: Image resized to fill 800x480, then center-cropped
+1. **Resize & Crop**: Image resized to fill target dimensions, then center-cropped
 2. **Quantization**: Match pixels to actual E1002 display colors
-3. **Dithering**: Apply Stucki error diffusion
+3. **Dithering**: Apply selected error diffusion algorithm (Stucki, Floyd-Steinberg, or Atkinson)
 4. **Output**: Write idealized palette colors to 4-bit indexed PNG
 
 ## License
